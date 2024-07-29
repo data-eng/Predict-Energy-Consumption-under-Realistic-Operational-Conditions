@@ -157,68 +157,46 @@ out_csv = "./final.csv"
 create_dataframe(folder=data_folder, output_file=out_csv)
 process_dataframe(folder=data_folder, filename=out_csv, pred_column='fuelVolumeFlowRate')
 
-plot_data = False
 
-if plot_data:
+aggr_data = False
+
+if aggr_data:
     df = pd.read_csv(out_csv)
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    df.set_index('datetime', inplace=True)
+
+    # Convert latitude and longitude to numerical values
     df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
     df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
     plot_values(df=df, plot_dir='./plots')
 
-
     print("Statistics for non-aggregated data")
-    df = pd.read_csv(out_csv)
     stats_dataframe(df=df)
 
     print("Statistics 1-minute aggregated data")
-    df = pd.read_csv(out_csv)
-    print(df.shape)
-
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df.set_index('datetime', inplace=True)
-
-    # Convert latitude and longitude to numerical values
-    df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
-    df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
-
     # Resample to 1-minute intervals and aggregate
     df_resampled = df.resample('1min').mean() #.agg(['mean', 'std'])
-
     plot_values(df=df_resampled, plot_dir='./plots_1_min_aggr')
     stats_dataframe(df=df_resampled, aggr=False)
+    df_resampled.to_csv("./aggr_1_min.csv", index=False)
 
+    print("Statistics 3-minute aggregated data")
+    # Resample to 3-minute intervals and aggregate
+    df_resampled = df.resample('3min').mean()  # .agg(['mean', 'std'])
+    stats_dataframe(df=df_resampled, aggr=False)
+    plot_values(df=df_resampled, plot_dir='./plots_3_min_aggr')
+    df_resampled.to_csv("./aggr_3_min.csv", index=False)
 
     print("Statistics 5-minute aggregated data")
-    df = pd.read_csv(out_csv)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df.set_index('datetime', inplace=True)
-
-    # Convert latitude and longitude to numerical values
-    df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
-    df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
-
     # Resample to 5-minute intervals and aggregate
     df_resampled = df.resample('5min').mean() #.agg(['mean', 'std'])
     stats_dataframe(df=df_resampled, aggr=False)
-
     plot_values(df=df_resampled, plot_dir='./plots_5_min_aggr')
-
+    df_resampled.to_csv("./aggr_5_min.csv", index=False)
 
     print("Statistics 10-minute aggregated data")
-    df = pd.read_csv(out_csv)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df.set_index('datetime', inplace=True)
-
-    # Convert latitude and longitude to numerical values
-    df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
-    df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
-
-    # Resample to 5-minute intervals and aggregate
+    # Resample to 10-minute intervals and aggregate
     df_resampled = df.resample('10min').agg(['mean', 'std'])
     stats_dataframe(df=df_resampled, aggr=False)
-
     plot_values(df=df, plot_dir='./plots_10_min_aggr')
-
-
-
-
+    df_resampled.to_csv("./aggr_10_min.csv", index=False)
