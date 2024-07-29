@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "predict-energy-consumption-under-realistic-operational-conditions"
+version = "0.1.0"
+description = ""
+authors = ["tatiana-boura <tat.boura@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+matplotlib = "^3.9.1"
+pandas = "^2.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
