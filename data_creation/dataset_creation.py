@@ -154,34 +154,35 @@ create_dataframe(folder=data_folder, output_file=out_csv)
 process_dataframe(folder=data_folder, filename=out_csv, pred_column='fuelVolumeFlowRate')
 
 aggr_data = True
-aggregation = '5min'
+aggregation_vals = ['3min', '10min']
 plot, show_stats = False, False
 
 if aggr_data:
-    df = pd.read_csv(out_csv)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df.set_index('datetime', inplace=True)
+    for aggregation in aggregation_vals:
+        df = pd.read_csv(out_csv)
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        df.set_index('datetime', inplace=True)
 
-    # Convert latitude and longitude to numerical values
-    df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
-    df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
+        # Convert latitude and longitude to numerical values
+        df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
+        df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
 
-    if show_stats:
-        print("Statistics for non-aggregated raw_data")
-        stats_dataframe(df=df)
+        if show_stats:
+            print("Statistics for non-aggregated raw_data")
+            stats_dataframe(df=df)
 
-    print(f"Created {aggregation}ute aggregated data")
-    # Resample to intervals and aggregate
-    df_resampled = df.resample(aggregation).agg(['mean', 'std'])
+        print(f"Created {aggregation}ute aggregated data")
+        # Resample to intervals and aggregate
+        df_resampled = df.resample(aggregation).agg(['mean', 'std'])
 
-    if show_stats:
-        print(f"Statistics {aggregation}ute aggregated data")
-        stats_dataframe(df=df_resampled, aggr=False)
+        if show_stats:
+            print(f"Statistics {aggregation}ute aggregated data")
+            stats_dataframe(df=df_resampled, aggr=False)
 
-    if not os.path.exists("data_plots"):
-        os.makedirs("data_plots")
+        if not os.path.exists("data_plots"):
+            os.makedirs("data_plots")
 
-    if plot:
-        plot_values(df=df, plot_dir=f'./data_plots/plots_{aggregation}_aggr')
+        if plot:
+            plot_values(df=df, plot_dir=f'./data_plots/plots_{aggregation}_aggr')
 
-    df_resampled.to_csv(f"./data/aggr_{aggregation}.csv", index=False)
+        df_resampled.to_csv(f"./data/aggr_{aggregation}.csv", index=False)
