@@ -4,8 +4,6 @@ from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
 
-# prediction_measure = "fuelVolumeFlowRate.csv"
-
 
 def dms_string_to_decimal(dms_string):
     if pd.isna(dms_string):
@@ -70,14 +68,11 @@ def process_dataframe(folder, filename, pred_column):
     assert len(df.columns) == num_of_columns + 1  # folder-files plus Timestamp
 
     first_valid_index = df[pred_column].first_valid_index()
-    print(df.shape)
 
     if first_valid_index is not None:
         # Slice the DataFrame to keep rows from the first valid index onwards
         df = df.loc[first_valid_index:]
         df.reset_index(drop=True, inplace=True)  # Reset index after slicing
-
-    print(df.shape)
 
     last_valid_index = df[pred_column].last_valid_index()
 
@@ -85,8 +80,6 @@ def process_dataframe(folder, filename, pred_column):
         # Slice the DataFrame to keep rows up to and including the last valid index
         df = df.loc[:last_valid_index]
         df.reset_index(drop=True, inplace=True)  # Reset index after slicing
-
-    print(df.shape)
 
     # Translate the timestamps into a more readable and processable format (pandas DateTime)
     df['datetime'] = df['timestamp'].apply(clr_datetime_to_unix_time)
@@ -151,14 +144,18 @@ def plot_values(df, plot_dir):
         plt.close('all')
 
 
-data_folder = os.path.abspath('./data')
-out_csv = "./final.csv"
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+data_folder = os.path.abspath('raw_data')
+out_csv = "./data/final.csv"
 
 create_dataframe(folder=data_folder, output_file=out_csv)
 process_dataframe(folder=data_folder, filename=out_csv, pred_column='fuelVolumeFlowRate')
 
-
-aggr_data = False
+aggr_data = True
+aggregation = '5min'
+plot, show_stats = False, False
 
 if aggr_data:
     df = pd.read_csv(out_csv)
@@ -168,35 +165,23 @@ if aggr_data:
     # Convert latitude and longitude to numerical values
     df['latitude'] = df['latitude'].apply(dms_string_to_decimal)
     df['longitude'] = df['longitude'].apply(dms_string_to_decimal)
-    plot_values(df=df, plot_dir='./plots')
 
-    print("Statistics for non-aggregated data")
-    stats_dataframe(df=df)
+    if show_stats:
+        print("Statistics for non-aggregated raw_data")
+        stats_dataframe(df=df)
 
-    print("Statistics 1-minute aggregated data")
-    # Resample to 1-minute intervals and aggregate
-    df_resampled = df.resample('1min').mean() #.agg(['mean', 'std'])
-    plot_values(df=df_resampled, plot_dir='./plots_1_min_aggr')
-    stats_dataframe(df=df_resampled, aggr=False)
-    df_resampled.to_csv("./aggr_1_min.csv", index=False)
+    print(f"Created {aggregation}ute aggregated data")
+    # Resample to intervals and aggregate
+    df_resampled = df.resample(aggregation).agg(['mean', 'std'])
 
-    print("Statistics 3-minute aggregated data")
-    # Resample to 3-minute intervals and aggregate
-    df_resampled = df.resample('3min').mean()  # .agg(['mean', 'std'])
-    stats_dataframe(df=df_resampled, aggr=False)
-    plot_values(df=df_resampled, plot_dir='./plots_3_min_aggr')
-    df_resampled.to_csv("./aggr_3_min.csv", index=False)
+    if show_stats:
+        print(f"Statistics {aggregation}ute aggregated data")
+        stats_dataframe(df=df_resampled, aggr=False)
 
-    print("Statistics 5-minute aggregated data")
-    # Resample to 5-minute intervals and aggregate
-    df_resampled = df.resample('5min').mean() #.agg(['mean', 'std'])
-    stats_dataframe(df=df_resampled, aggr=False)
-    plot_values(df=df_resampled, plot_dir='./plots_5_min_aggr')
-    df_resampled.to_csv("./aggr_5_min.csv", index=False)
+    if not os.path.exists("data_plots"):
+        os.makedirs("data_plots")
 
-    print("Statistics 10-minute aggregated data")
-    # Resample to 10-minute intervals and aggregate
-    df_resampled = df.resample('10min').agg(['mean', 'std'])
-    stats_dataframe(df=df_resampled, aggr=False)
-    plot_values(df=df, plot_dir='./plots_10_min_aggr')
-    df_resampled.to_csv("./aggr_10_min.csv", index=False)
+    if plot:
+        plot_values(df=df, plot_dir=f'./data_plots/plots_{aggregation}_aggr')
+
+    df_resampled.to_csv(f"./data/aggr_{aggregation}.csv", index=False)
