@@ -185,4 +185,5 @@ if aggr_data:
         if plot:
             plot_values(df=df, plot_dir=f'./data_plots/plots_{aggregation}_aggr')
 
+        df_resampled = df_resampled.reset_index()
         df_resampled.to_csv(f"./data/aggr_{aggregation}.csv", index=False)
