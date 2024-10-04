@@ -123,7 +123,7 @@ class TimeRepr():
         return line
 
 
-def load(path, time_repr, normalize=True):
+def load(path, time_repr, y, normalize=True):
     """
     Loads and preprocesses raw_data from a CSV file.
 
@@ -150,7 +150,9 @@ def load(path, time_repr, normalize=True):
     # Convert object columns to float, except 'datetime'
     df[df.select_dtypes(include='object').columns] = df.select_dtypes(include='object').astype(float)
 
-    params = {"X": [x for x in df.columns if x != 'datetime'],  "t": []}
+    params = {"X": [x for x in df.columns if x != 'datetime' and x != 'fuelVolumeFlowRate_std' and
+                    x != 'fuelVolumeFlowRate_mean'],
+              "t": []}
 
     df, params = include_time_repr(df, params, *time_repr)
 
@@ -161,32 +163,13 @@ def load(path, time_repr, normalize=True):
 
     if normalize:
         df = utils.normalize(df, stats, exclude=['datetime', 'COR_MONTH', 'COR_DAY', 'COR_HOUR', 'COR_DATE',
-                                                 'UNIQ_MONTH', 'UNIQ_DAY', 'UNIQ_HOUR', 'UNIQ_DATE'])
+                                                 'UNIQ_MONTH', 'UNIQ_DAY', 'UNIQ_HOUR', 'UNIQ_DATE', 'COR_SECOND',
+                                                 'UNIQ_SECOND', y])
 
-    nan_counts = df.isna().sum() / len(df) * 100
-    logger.info("NaN counts for columns in X: %s", nan_counts)
+    # nan_counts = df.isna().sum() / len(df) * 100
+    # logger.info("NaN counts for columns in X: %s", nan_counts)
 
     return df, params
-
-'''
-def prepare(df, phase, ignore):
-    """
-    Prepares the dataframe for training by filtering columns and saving to CSV.
-
-    :param df: dataframe
-    :param phase: str model phase (train or test)
-    :return: dataframe
-    """
-    name =  "transformer/" + "df_" + phase + ".csv"
-
-    for column, threshold in ignore:
-        df = utils.filter(df, column=column, threshold=threshold) 
-
-    df.set_index('DATETIME', inplace=True)
-    df.to_csv(name)
-    df = pd.read_csv(name, parse_dates=['DATETIME'], index_col='DATETIME')
-
-    return df
 
 
 class TSDataset(Dataset):
@@ -202,7 +185,7 @@ class TSDataset(Dataset):
         """
         self.seq_len = seq_len
 
-        y_nan = df[y].isna().any(axis=1)
+        y_nan = df[[y]].isna().any(axis=1)
         df.loc[y_nan, :] = float('nan')
 
         self.X = pd.concat([df[X], df[t]], axis=1)
@@ -212,7 +195,7 @@ class TSDataset(Dataset):
         """
         :return: number of sequences that can be created from dataset X
         """
-        return self.num_seqs
+        return self.X.shape[0] // self.seq_len
     
     def __getitem__(self, idx):
         """
@@ -244,17 +227,9 @@ class TSDataset(Dataset):
                 mask_y_1d[i] = 1
 
         return X, y, mask_X_1d, mask_y_1d
-    
-    @property
-    def max_seq_id(self):
-        return self.X.shape[0] - self.seq_len
-    
-    @property
-    def num_seqs(self):
-        return self.X.shape[0] // self.seq_len
 
 
-def split(dataset, vperc=0.2):
+def split(dataset, vperc):
     """
     Splits a dataset into training and validation sets.
 
@@ -268,4 +243,3 @@ def split(dataset, vperc=0.2):
     train_seqs = ds_seqs - valid_seqs
 
     return random_split(dataset, [train_seqs, valid_seqs])
-'''

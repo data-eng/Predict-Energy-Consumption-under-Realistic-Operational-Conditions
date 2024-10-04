@@ -11,29 +11,15 @@ import math
 from collections import namedtuple
 
 
-def mask(tensor, mask, id=0):
-    """
-    Mask a tensor based on a specified condition.
-
-    :param tensor: torch.Tensor
-    :param mask: torch.Tensor
-    :param id: int value specifying the elements to keep
-    :return: torch.Tensor
-    """
-    return tensor[mask == id]
-
-
 class MaskedMSELoss(nn.Module):
     """
     MaskedMSELoss that utilizes masks
     """
-    def __init__(self, sequence_length):
+    def __init__(self):
         super(MaskedMSELoss, self).__init__()
-        self.sequence_length = sequence_length
 
     def forward(self, pred, true, mask):
-        if pred.dim() == 1: pred = pred.unsqueeze(0)
-        pred = pred.view(pred.shape[0], self.sequence_length, pred.shape[1] // self.sequence_length).mean(dim=2)
+        pred = pred.squeeze()
         # Compute element-wise squared difference
         squared_diff = (pred - true) ** 2
         # Apply mask to ignore certain elements
@@ -43,24 +29,6 @@ class MaskedMSELoss(nn.Module):
         loss = loss.sum() / (mask.sum() + 1e-8)
 
         return loss
-
-
-def tensor_to_python_numbers(tensor):
-    """
-    Converts all items in a dictionary to numpy numbers
-    :param tensor:
-    :return:
-    """
-    if isinstance(tensor, torch.Tensor):
-        return tensor.item() if tensor.numel() == 1 else tensor.cpu().numpy().tolist()
-    elif isinstance(tensor, np.ndarray):
-        return tensor.item() if np.prod(tensor.shape) == 1 else tensor.tolist()
-    elif isinstance(tensor, (list, tuple)):
-        return [tensor_to_python_numbers(item) for item in tensor]
-    elif isinstance(tensor, dict):
-        return {key: tensor_to_python_numbers(value) for key, value in tensor.items()}
-    else:
-        return tensor
 
 
 def get_max(arr):
