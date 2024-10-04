@@ -130,8 +130,41 @@ def save_csv(data, filename):
     df.to_csv(filename, index=False)
 
 
-def visualize():
-    pass
+def visualize(vizualization, *args):
+
+    if vizualization == 'losses':
+        train_loss, val_loss = args
+        epochs = [i+1 for i in range(len(train_loss))]
+
+        # Plot the losses
+        plt.plot(epochs, train_loss, 'r', label='Training Loss')
+        plt.plot(epochs, val_loss, 'b', label='Validation Loss')
+        # Add titles and labels
+        plt.title('Training and Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        # Add a legend
+        plt.legend()
+        # Show the plot
+        plt.show()
+
+    elif vizualization == 'training_predictions':
+        y_true, y_pred = args
+        epochs = [i + 1 for i in range(len(y_true))]
+
+        # Plot the losses
+        plt.plot(epochs, y_true, 'o', label='True value')
+        #plt.plot(epochs, y_pred, 'x', label='Predicted value')
+        # Add titles and labels
+        plt.title('True vs Predicted Value')
+        plt.xlabel('Epochs')
+        plt.ylabel('Predicted value')
+        # Add a legend
+        plt.legend()
+        # Show the plot
+        plt.show()
+    else:
+        print('Unknown vizualization.')
 
 
 def normalize(df, stats, exclude=()):

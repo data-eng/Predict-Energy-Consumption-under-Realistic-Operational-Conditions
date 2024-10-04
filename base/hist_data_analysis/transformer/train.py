@@ -100,10 +100,6 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
                                 'best_val_loss': best_val_loss,
                                 'true_vals': true_values_list,
                                 'pred_vals': pred_values_list})
-
-            if visualize:
-                utils.visualize()
-                
         else:
             stationary += 1
 
@@ -116,13 +112,21 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
     cfn = utils.get_path(dirs=dirs, name="train_checkpoints.json")
     checkpoints.update({'epochs': epoch+1})
     utils.save_json(data=checkpoints, filename=cfn)
-    
-    if visualize:
 
+    # Get the indices where values are NaN
+    print(len(true_values_list))
+    nan_indices = [i for i, value in enumerate(true_values_list) if value == -1]
+    # Remove corresponding indexes from another list
+    true_values_list = [value for idx, value in enumerate(true_values_list) if idx not in nan_indices]
+    pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
+    print(len(true_values_list))
+
+    if visualize:
         cfn = utils.get_path(dirs=dirs, name="train_losses.json")
         utils.save_json(data=train_losses, filename=cfn)
 
-        utils.visualize()
+        utils.visualize('losses', train_losses, val_losses)
+        utils.visualize('training_predictions', true_values_list, pred_values_list)
 
     logger.info(f'\nTraining with seed {seed} complete!\nFinal Training Loss: {avg_train_loss:.6f} & Validation Loss: {best_val_loss:.6f}\n')
 
@@ -131,7 +135,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
 def main_loop(time_repr, seed, dirs):
     path = "../../../data_creation/data/aggr_3min.csv"
-    seq_len = 10
+    seq_len = 5 #10
     batch_size = 8
 
     y = 'fuelVolumeFlowRate_mean'
@@ -153,7 +157,7 @@ def main_loop(time_repr, seed, dirs):
                         dropout=0)
 
     _, _ = train(data=(dl_train, dl_val),
-                 epochs=10,
+                 epochs=2,
                  patience=5,
                  lr=5e-4,
                  criterion=utils.MaskedMSELoss(),

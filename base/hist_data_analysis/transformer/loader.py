@@ -150,8 +150,12 @@ def load(path, time_repr, y, normalize=True):
     # Convert object columns to float, except 'datetime'
     df[df.select_dtypes(include='object').columns] = df.select_dtypes(include='object').astype(float)
 
-    params = {"X": [x for x in df.columns if x != 'datetime' and x != 'fuelVolumeFlowRate_std' and
-                    x != 'fuelVolumeFlowRate_mean'],
+    '''params = {"X": [x for x in df.columns if x != 'datetime' and x != 'fuelVolumeFlowRate_std' and x != y],
+              "t": []}'''
+
+    params = {"X": ['inclinometer-raw_mean', 'inclinometer-raw_std', 'trueHeading_mean', 'trueHeading_std',
+                    'windAngle_mean', 'windAngle_std', 'windSpeed_mean', 'windSpeed_std', 'longitudinalWaterSpeed_mean',
+                    'longitudinalWaterSpeed_std', 'speedKmh_mean', 'speedKmh_std', 'speedKnots_mean', 'speedKnots_std'],
               "t": []}
 
     df, params = include_time_repr(df, params, *time_repr)
@@ -164,7 +168,7 @@ def load(path, time_repr, y, normalize=True):
     if normalize:
         df = utils.normalize(df, stats, exclude=['datetime', 'COR_MONTH', 'COR_DAY', 'COR_HOUR', 'COR_DATE',
                                                  'UNIQ_MONTH', 'UNIQ_DAY', 'UNIQ_HOUR', 'UNIQ_DATE', 'COR_SECOND',
-                                                 'UNIQ_SECOND', y])
+                                                 'UNIQ_SECOND', y, 'fuelVolumeFlowRate_std'])
 
     # nan_counts = df.isna().sum() / len(df) * 100
     # logger.info("NaN counts for columns in X: %s", nan_counts)
@@ -195,7 +199,8 @@ class TSDataset(Dataset):
         """
         :return: number of sequences that can be created from dataset X
         """
-        return self.X.shape[0] // self.seq_len
+        # return self.X.shape[0] // self.seq_len
+        return self.X.shape[0] - self.seq_len + 1
     
     def __getitem__(self, idx):
         """
@@ -214,17 +219,22 @@ class TSDataset(Dataset):
         X, y = torch.FloatTensor(X), torch.FloatTensor(y)
         mask_X, mask_y = torch.FloatTensor(mask_X), torch.FloatTensor(mask_y)
 
-        X, y = X.masked_fill(mask_X == 1, -2), y.masked_fill(mask_y == 1, 0)
+        X, y = X.masked_fill(mask_X == 1, -1), y.masked_fill(mask_y == 1, -1)
 
         seq_len = mask_X.size(0)
-        mask_X_1d = torch.zeros(seq_len)
-        mask_y_1d = torch.zeros(seq_len)
+        #mask_X_1d = torch.zeros(seq_len)
+        #mask_y_1d = torch.zeros(seq_len)
+
+        mask_X_1d = torch.ones(seq_len)
+        mask_y_1d = torch.ones(seq_len)
 
         for i in range(seq_len):
             if torch.any(mask_X[i] == 1):
-                mask_X_1d[i] = 1
+                mask_X_1d[i] = 0
+                #mask_X_1d[i] = 1
             if torch.any(mask_y[i] == 1):
-                mask_y_1d[i] = 1
+                mask_y_1d[i] = 0
+                #mask_y_1d[i] = 1
 
         return X, y, mask_X_1d, mask_y_1d
 
