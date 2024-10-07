@@ -30,6 +30,44 @@ class MaskedMSELoss(nn.Module):
 
         return loss
 
+class MaskedMAELoss(nn.Module):
+    """
+    MaskedMSELoss that utilizes masks
+    """
+    def __init__(self):
+        super(MaskedMAELoss, self).__init__()
+
+    def forward(self, pred, true, mask):
+        pred = pred.squeeze()
+        # Compute element-wise squared difference
+        abs_diff = torch.abs(pred - true)
+        # Apply mask to ignore certain elements
+        mask = mask.float()
+        loss = abs_diff * mask
+        # Compute the mean loss only over non-masked elements
+        loss = loss.sum() / (mask.sum() + 1e-8)
+
+        return loss
+
+class MaskedLogCosh(nn.Module):
+    """
+    MaskedMSELoss that utilizes masks
+    """
+    def __init__(self):
+        super(MaskedLogCosh, self).__init__()
+
+    def forward(self, pred, true, mask):
+        pred = pred.squeeze()
+        # Compute element-wise squared difference
+        log_cosh = torch.mean(torch.log(torch.cosh(pred - true)))
+        # Apply mask to ignore certain elements
+        mask = mask.float()
+        loss = log_cosh * mask
+        # Compute the mean loss only over non-masked elements
+        loss = loss.sum() / (mask.sum() + 1e-8)
+
+        return loss
+
 
 def get_max(arr):
     """
@@ -154,7 +192,7 @@ def visualize(vizualization, *args):
 
         # Plot the losses
         plt.plot(epochs, y_true, 'o', label='True value')
-        #plt.plot(epochs, y_pred, 'x', label='Predicted value')
+        plt.plot(epochs, y_pred, 'x', label='Predicted value')
         # Add titles and labels
         plt.title('True vs Predicted Value')
         plt.xlabel('Epochs')
@@ -167,7 +205,7 @@ def visualize(vizualization, *args):
         print('Unknown vizualization.')
 
 
-def normalize(df, stats, exclude=()):
+def normalize(df, stats, exclude=None):
     """
     Normalize raw_data.
 

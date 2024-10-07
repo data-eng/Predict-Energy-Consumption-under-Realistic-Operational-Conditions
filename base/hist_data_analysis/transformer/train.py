@@ -45,7 +45,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
         true_values, pred_values = [], []
 
         for _, (X, y, mask_X, mask_y) in enumerate(train_data):
-            X, y, mask_X, mask_y = X.to(device), y.long().to(device), mask_X.to(device), mask_y.to(device)
+            X, y, mask_X, mask_y = X.to(device), y.to(device), mask_X.to(device), mask_y.to(device)
             y, mask_y = y[:, -1], mask_y[:, -1]
             y_pred = model(X, mask_X)
 
@@ -68,7 +68,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
         with torch.no_grad():
             for X, y, mask_X, mask_y in val_data:
-                X, y, mask_X, mask_y = X.to(device), y.long().to(device), mask_X.to(device), mask_y.to(device)
+                X, y, mask_X, mask_y = X.to(device), y.to(device), mask_X.to(device), mask_y.to(device)
                 y, mask_y = y[:, -1], mask_y[:, -1]
                 y_pred = model(X, mask_X)
 
@@ -90,7 +90,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
             best_val_loss = avg_val_loss
             stationary = 0
 
-            logger.info(f"New best val found! ~ Epoch [{epoch + 1}/{epochs}], Val Loss {avg_val_loss}")
+            logger.info(f"~ New best val found!")
 
             mfn = utils.get_path(dirs=dirs, name="transformer.pth")
             torch.save(model.state_dict(), mfn)
@@ -116,7 +116,6 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
     # Get the indices where values are NaN
     print(len(true_values_list))
     nan_indices = [i for i, value in enumerate(true_values_list) if value == -1]
-    # Remove corresponding indexes from another list
     true_values_list = [value for idx, value in enumerate(true_values_list) if idx not in nan_indices]
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
     print(len(true_values_list))
@@ -135,7 +134,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
 def main_loop(time_repr, seed, dirs):
     path = "../../../data_creation/data/aggr_3min.csv"
-    seq_len = 5 #10
+    seq_len = 10
     batch_size = 8
 
     y = 'fuelVolumeFlowRate_mean'
@@ -153,14 +152,14 @@ def main_loop(time_repr, seed, dirs):
                         out_size=1,
                         nhead=1,
                         num_layers=1,
-                        dim_feedforward=2048,
+                        dim_feedforward=1024,
                         dropout=0)
 
     _, _ = train(data=(dl_train, dl_val),
-                 epochs=2,
+                 epochs=30,
                  patience=5,
                  lr=5e-4,
-                 criterion=utils.MaskedMSELoss(),
+                 criterion=utils.MaskedLogCosh(),
                  model=model,
                  optimizer="AdamW",
                  scheduler=("StepLR", 1.0, 0.98),
