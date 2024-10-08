@@ -32,13 +32,13 @@ class MaskedMSELoss(nn.Module):
 
 class MaskedMAELoss(nn.Module):
     """
-    MaskedMSELoss that utilizes masks
+    MaskedMAELoss that utilizes masks
     """
     def __init__(self):
         super(MaskedMAELoss, self).__init__()
 
     def forward(self, pred, true, mask):
-        pred = pred.squeeze()
+        pred, mask = pred.squeeze(), mask.squeeze()
         # Compute element-wise squared difference
         abs_diff = torch.abs(pred - true)
         # Apply mask to ignore certain elements
@@ -57,9 +57,9 @@ class MaskedLogCosh(nn.Module):
         super(MaskedLogCosh, self).__init__()
 
     def forward(self, pred, true, mask):
-        pred = pred.squeeze()
+        pred, mask = pred.squeeze(), mask.squeeze()
         # Compute element-wise squared difference
-        log_cosh = torch.mean(torch.log(torch.cosh(pred - true)))
+        log_cosh = torch.mean(torch.log(torch.cosh(pred - true) * 10))
         # Apply mask to ignore certain elements
         mask = mask.float()
         loss = log_cosh * mask

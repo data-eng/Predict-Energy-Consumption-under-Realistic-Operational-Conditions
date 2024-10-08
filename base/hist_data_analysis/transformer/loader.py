@@ -199,8 +199,8 @@ class TSDataset(Dataset):
         """
         :return: number of sequences that can be created from dataset X
         """
-        return self.X.shape[0] // self.seq_len
-        # return self.X.shape[0] - self.seq_len + 1
+        return self.X.shape[0] // self.seq_len - 1
+        # return self.X.shape[0] - self.seq_len + 1 # -1
     
     def __getitem__(self, idx):
         """
@@ -212,28 +212,33 @@ class TSDataset(Dataset):
         start_idx = idx * self.seq_len
         end_idx = start_idx + self.seq_len
     
-        X, y = self.X.iloc[start_idx:end_idx].values, self.y.iloc[start_idx:end_idx].values
+        X, y = self.X.iloc[start_idx:end_idx].values, self.y.iloc[end_idx+1]
 
-        mask_X, mask_y = pd.isnull(X).astype(int), pd.isnull(y).astype(int)
+        mask_X, mask_y = pd.isnull(X).astype(int), int(pd.isnull(y))
 
-        X, y = torch.FloatTensor(X), torch.FloatTensor(y)
-        mask_X, mask_y = torch.FloatTensor(mask_X), torch.FloatTensor(mask_y)
+        X, y = torch.FloatTensor(X), torch.FloatTensor([y])
+        mask_X, mask_y = torch.FloatTensor(mask_X), torch.FloatTensor([mask_y])
 
-        X, y = X.masked_fill(mask_X == 1, -2), y.masked_fill(mask_y == 1, -1)
 
-        #mask_X_1d = torch.zeros(self.seq_len)
-        #mask_y_1d = torch.zeros(self.seq_len)
+        if mask_y == 1:
 
-        mask_X_1d = torch.ones(self.seq_len)
-        mask_y_1d = torch.ones(self.seq_len)
+            y = torch.tensor([-1])
+            X = X.fill_(-2)
 
-        for i in range(self.seq_len):
-            if torch.any(mask_X[i] == 1):
-                mask_X_1d[i] = 0
-                #mask_X_1d[i] = 1
-            if torch.any(mask_y[i] == 1):
-                mask_y_1d[i] = 0
-                #mask_y_1d[i] = 1
+            mask_y_1d = torch.zeros(1)
+            mask_X_1d = torch.zeros(self.seq_len)
+            # mask_y_1d = torch.ones(1)
+        else:
+
+            X = X.masked_fill(mask_X == 1, -2)
+
+            mask_X_1d = torch.ones(self.seq_len)
+            mask_y_1d = torch.ones(1)
+            # mask_y_1d = torch.zeros(1)
+            for i in range(self.seq_len):
+                if torch.any(mask_X[i] == 1):
+                    mask_X_1d[i] = 0
+                    # mask_X_1d[i] = 1
 
         '''has_positive = torch.gt(y, 0).any()
 

@@ -46,7 +46,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
         for _, (X, y, mask_X, mask_y) in enumerate(train_data):
             X, y, mask_X, mask_y = X.to(device), y.to(device), mask_X.to(device), mask_y.to(device)
-            y, mask_y = y[:, -1], mask_y[:, -1]
+            y, mask_y = y.squeeze(), mask_y.squeeze()
             y_pred = model(X, mask_X)
 
             train_loss = criterion(pred=y_pred, true=y, mask=mask_y)
@@ -69,7 +69,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
         with torch.no_grad():
             for X, y, mask_X, mask_y in val_data:
                 X, y, mask_X, mask_y = X.to(device), y.to(device), mask_X.to(device), mask_y.to(device)
-                y, mask_y = y[:, -1], mask_y[:, -1]
+                y, mask_y = y.squeeze(), mask_y.squeeze()
                 y_pred = model(X, mask_X)
 
                 val_loss = criterion(pred=y_pred, true=y, mask=mask_y)
@@ -134,7 +134,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
 def main_loop(time_repr, seed, dirs):
     path = "../../../data_creation/data/aggr_3min.csv"
-    seq_len = 10
+    seq_len = 5
     batch_size = 8
 
     y = 'fuelVolumeFlowRate_mean'
@@ -159,7 +159,7 @@ def main_loop(time_repr, seed, dirs):
                  epochs=30,
                  patience=5,
                  lr=5e-4,
-                 criterion=utils.MaskedLogCosh(),
+                 criterion=utils.MaskedMSELoss(),
                  model=model,
                  optimizer="AdamW",
                  scheduler=("StepLR", 1.0, 0.98),
