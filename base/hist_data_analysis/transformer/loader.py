@@ -157,6 +157,7 @@ def load(path, time_repr, y, normalize=True):
                     'longitudinalWaterSpeed_std', 'speedKmh_mean', 'speedKmh_std', 'speedKnots_mean', 'speedKnots_std'],
               "t": []}
 
+    # Include time representations of the timeseries
     df, params = include_time_repr(df, params, *time_repr)
 
     if os.path.exists('./stats.json'):

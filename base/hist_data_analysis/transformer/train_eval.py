@@ -63,11 +63,11 @@ def test(test_data, criterion, model, seed, dirs, visualize=False):
     utils.save_json(data=results, filename=cfn)
 
     # Get the indices where values are NaN
-    print(len(true_values_list))
+    # print(len(true_values_list))
     nan_indices = [i for i, value in enumerate(true_values_list) if value == -1]
     true_values_list = [value for idx, value in enumerate(true_values_list) if idx not in nan_indices]
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
-    print(len(true_values_list))
+    # print(len(true_values_list))
 
     if visualize:
         utils.visualize('testing_predictions', true_values_list, pred_values_list)
@@ -99,6 +99,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
     
     logger.info(f"\nTraining with seed {seed} just started...")
 
+    # One forward pass of all training data
     for epoch in range(epochs):
         model.train()
         total_train_loss = 0.0
@@ -126,6 +127,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
         model.eval()
         total_val_loss = 0.0
 
+        # One validation pass to activate early stopping if needed
         with torch.no_grad():
             for X, y, mask_X, mask_y in val_data:
                 X, y, mask_X, mask_y = X.to(device), y.to(device), mask_X.to(device), mask_y.to(device)
@@ -169,16 +171,17 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
         scheduler.step()
 
+    # Store predictions and losses and print diagrams for the training data
     cfn = utils.get_path(dirs=dirs, name="train_checkpoints.json")
     checkpoints.update({'epochs': epoch+1})
     utils.save_json(data=checkpoints, filename=cfn)
 
     # Get the indices where values are NaN
-    print(len(true_values_list))
+    # print(len(true_values_list))
     nan_indices = [i for i, value in enumerate(true_values_list) if value == -1]
     true_values_list = [value for idx, value in enumerate(true_values_list) if idx not in nan_indices]
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
-    print(len(true_values_list))
+    # print(len(true_values_list))
 
     if visualize:
         cfn = utils.get_path(dirs=dirs, name="train_losses.json")
@@ -200,6 +203,7 @@ def main_loop(time_repr, seed, dirs):
 
     y = 'fuelVolumeFlowRate_mean'
 
+    # Load data, split into train, validation and testing set
     df, params = load(path=path, normalize=True, time_repr=time_repr, y=y)
     df_train, df_test = train_test_split(dataset=df, minutes_aggr=minutes_aggr, num_of_trips=100)
 
@@ -211,7 +215,7 @@ def main_loop(time_repr, seed, dirs):
     dl_train = DataLoader(ds_train, batch_size, shuffle=True)
     dl_val = DataLoader(ds_val, batch_size, shuffle=False)
 
-    #
+    # Create the regressor
     model = Transformer(in_size=len(params["X"])+len(params["t"]),
                         sequence_len=seq_len,
                         out_size=1,
@@ -246,4 +250,4 @@ main_loop(time_repr=(["month", "hour", "second"], ["sine", "sine", "sine"], ["co
                      [[(12, None, 0), (12, None, 0), (12, None, 0)], [(24, None, 0), (24, None, 0), (24, None, 0)],
                      [(60, None, 0), (60, None, 0), (60, None, 0)]]),
           seed=13,
-          dirs=["models", "1", "13"])
+          dirs=["models", "13"])
