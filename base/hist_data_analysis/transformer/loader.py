@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import Dataset, random_split
 import logging
 import utils
-import datetime
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -200,11 +199,11 @@ class TSDataset(Dataset):
         :return: number of sequences that can be created from dataset X
         """
         return self.X.shape[0] // self.seq_len - 1
-        # return self.X.shape[0] - self.seq_len + 1 # -1
     
     def __getitem__(self, idx):
         """
         Retrieves a sample from the dataset at the specified index.
+        Handles NaN values accordingly.
 
         :param idx: index of the sample
         :return: tuple containing input features sequence, target variables sequence and their respective masks
@@ -219,26 +218,21 @@ class TSDataset(Dataset):
         X, y = torch.FloatTensor(X), torch.FloatTensor([y])
         mask_X, mask_y = torch.FloatTensor(mask_X), torch.FloatTensor([mask_y])
 
-
         if mask_y == 1:
-
             y = torch.tensor([-1])
             X = X.fill_(-2)
 
             mask_y_1d = torch.zeros(1)
             mask_X_1d = torch.zeros(self.seq_len)
-            # mask_y_1d = torch.ones(1)
         else:
 
             X = X.masked_fill(mask_X == 1, -2)
 
             mask_X_1d = torch.ones(self.seq_len)
             mask_y_1d = torch.ones(1)
-            # mask_y_1d = torch.zeros(1)
             for i in range(self.seq_len):
                 if torch.any(mask_X[i] == 1):
                     mask_X_1d[i] = 0
-                    # mask_X_1d[i] = 1
 
         '''has_positive = torch.gt(y, 0).any()
 
@@ -246,6 +240,26 @@ class TSDataset(Dataset):
             print(f'Positive value: {y}')'''
 
         return X, y, mask_X_1d, mask_y_1d
+
+
+def train_test_split(dataset, minutes_aggr, num_of_trips):
+    """
+    Splits a dataset into training and testing sets.
+    :param dataset: dataset
+    :param minutes_aggr: aggregation at minutes
+    :param num_of_trips: number of ship trips to use for the testing set
+    :return: tuple containing training and testing datasets
+    """
+
+    samples_per_hour = 60 // minutes_aggr
+    test_size = samples_per_hour * num_of_trips
+
+    train_size = dataset.shape[0] - test_size
+
+    train_set = dataset.iloc[:train_size, :]
+    test_set = dataset.iloc[train_size:, :]
+
+    return train_set, test_set
 
 
 def split(dataset, vperc):

@@ -4,11 +4,8 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as sched
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 import os
 import json
-import math
-from collections import namedtuple
 
 
 class MaskedMSELoss(nn.Module):
@@ -30,6 +27,7 @@ class MaskedMSELoss(nn.Module):
 
         return loss
 
+
 class MaskedMAELoss(nn.Module):
     """
     MaskedMAELoss that utilizes masks
@@ -49,6 +47,7 @@ class MaskedMAELoss(nn.Module):
 
         return loss
 
+
 class MaskedLogCosh(nn.Module):
     """
     MaskedMSELoss that utilizes masks
@@ -67,59 +66,6 @@ class MaskedLogCosh(nn.Module):
         loss = loss.sum() / (mask.sum() + 1e-8)
 
         return loss
-
-
-def get_max(arr):
-    """
-    Get the maximum value and its index from an array.
-
-    :param arr: numpy array
-    :return: namedtuple
-    """
-    Info = namedtuple('Info', ['value', 'index'])
-
-    max_index = np.argmax(arr)
-    max_value = arr[max_index]
-
-    return Info(value=max_value, index=max_index)
-
-
-def hot3D(t, k, device):
-    """
-    Encode 3D tensor into one-hot format.
-
-    :param t: tensor of shape (dim_0, dim_1, dim_2)
-    :param k: int number of classes
-    :param device: device
-    :return: tensor of shape (dim_0, dim_1, k)
-    """
-    dim_0, dim_1, _ = t.size()
-    t_hot = torch.zeros(dim_0, dim_1, k, device=device)
-
-    for x in range(dim_0):
-        for y in range(dim_1):
-            for z in t[x, y]:
-                t_hot[x, y] = torch.tensor(one_hot(z.item(), k=k))
-
-    return t_hot.to(device)
-
-
-def one_hot(val, k):
-    """
-    Convert categorical value to one-hot encoded representation.
-
-    :param val: float
-    :param k: number of classes
-    :return: list
-    """
-
-    if math.isnan(val):
-        encoding = [val for _ in range(k)]
-    else:
-        encoding = [0 for _ in range(k)]
-        encoding[int(val)] = 1
-
-    return encoding
 
 
 def get_path(dirs, name=""):
@@ -186,16 +132,15 @@ def visualize(vizualization, *args):
         # Show the plot
         plt.show()
 
-    elif vizualization == 'training_predictions':
+    elif vizualization == 'training_predictions' or vizualization == 'testing_predictions':
         y_true, y_pred = args
-        epochs = [i + 1 for i in range(len(y_true))]
-
+        idx = [i + 1 for i in range(len(y_true))]
         # Plot the losses
-        plt.plot(epochs, y_true, 'o', label='True value')
-        plt.plot(epochs, y_pred, 'x', label='Predicted value')
+        plt.plot(idx, y_true, 'o', label='True value')
+        plt.plot(idx, y_pred, 'x', label='Predicted value')
         # Add titles and labels
         plt.title('True vs Predicted Value')
-        plt.xlabel('Epochs')
+        plt.xlabel('idx')
         plt.ylabel('Predicted value')
         # Add a legend
         plt.legend()
@@ -246,45 +191,6 @@ def get_stats(df, path='./'):
     save_json(data=stats, filename=filename)
 
     return stats
-
-
-def filter(df, column, threshold):
-    """
-    Filter dataframe based on a single column and its threshold if the column exists.
-
-    :param df: dataframe
-    :param column: column name to filter
-    :param threshold: threshold value for filtering
-    :return: filtered dataframe if column exists, otherwise original dataframe
-    """
-    if column in df.columns:
-        if threshold is not None:
-            df = df[df[column] > threshold]
-        else:
-            df.drop(column, axis="columns", inplace=True)
-
-    return df
-
-
-def aggregate(df, grp="1min", func=lambda x: x):
-    """
-    Resample dataframe based on the provided frequency and aggregate using the specified function.
-
-    :param df: dataframe
-    :param grp: resampling frequency ('1min' -> original)
-    :param func: aggregation function (lambda x: x -> no aggregation)
-    :return: aggregated dataframe
-    """
-    df = df.set_index("DATETIME")
-
-    if grp:
-        df = df.resample(grp)
-        df = df.apply(func)
-        df = df.dropna()
-
-    df = df.sort_index()
-
-    return df
 
 
 def get_optim(name, model, lr):
