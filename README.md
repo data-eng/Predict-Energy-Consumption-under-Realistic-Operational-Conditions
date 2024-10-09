@@ -20,4 +20,6 @@ The data processing is available at [./data_creation](https://github.com/data-en
 -  [./base/hist_data_analysis/transformer/train_eval.py](https://github.com/data-eng/Energy-Consumption-NavGreen/blob/master/base/hist_data_analysis/transformer/train_eval.py) : Provides the **training and evaluation pipeline**. It, also, *stores* the training information and evaluation results and provides some basic visualization relevant to the task.
 > To run the pipeline, one simply can execute this script.
 
+-  [./base/hist_data_analysis/transformer/eval.py](https://github.com/data-eng/Energy-Consumption-NavGreen/blob/master/base/hist_data_analysis/transformer/eval.py) : Provides a more formal evaluation for the regression task.
+
 - [./base/hist_data_analysis/transformer/utils.py](https://github.com/data-eng/Energy-Consumption-NavGreen/blob/master/base/hist_data_analysis/transformer/utils.py) : Provides utility functions for the *loading*, *storing* and *plotting* as well as different **loss function** implementations.
