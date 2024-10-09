@@ -1,6 +1,7 @@
-import logging
+import random
 from torch.utils.data import DataLoader
 from model import Transformer
+from sklearn.metrics import r2_score
 from loader import *
 
 logger = logging.getLogger(__name__)
@@ -183,6 +184,9 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
     # print(len(true_values_list))
 
+    r2 = r2_score(true_values_list, pred_values_list)
+    logger.info(f"R-squared (R²): {r2:.5f}")
+
     if visualize:
         cfn = utils.get_path(dirs=dirs, name="train_losses.json")
         utils.save_json(data=train_losses, filename=cfn)
@@ -198,7 +202,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 def main_loop(time_repr, seed, dirs):
     minutes_aggr = 3
     path = f"../../../data_creation/data/aggr_{minutes_aggr}min.csv"
-    seq_len = 5
+    seq_len = 10
     batch_size = 8
 
     y = 'fuelVolumeFlowRate_mean'
@@ -219,16 +223,17 @@ def main_loop(time_repr, seed, dirs):
     model = Transformer(in_size=len(params["X"])+len(params["t"]),
                         sequence_len=seq_len,
                         out_size=1,
-                        nhead=1,
-                        num_layers=1,
+                        nhead=2,
+                        num_layers=2,
                         dim_feedforward=1024,
                         dropout=0)
 
     # Train model
     _, _ = train(data=(dl_train, dl_val),
-                 epochs=30,
-                 patience=5,
+                 epochs=50,
+                 patience=10,
                  lr=5e-4,
+                 # criterion=utils.MaskedLogCosh(),
                  criterion=utils.MaskedMSELoss(),
                  model=model,
                  optimizer="AdamW",
@@ -246,8 +251,28 @@ def main_loop(time_repr, seed, dirs):
              visualize=True)
 
 
+def set_seed(seed):
+    # Set the seed for generating random numbers in Python
+    random.seed(seed)
+    # Set the seed for generating random numbers in NumPy
+    np.random.seed(seed)
+    # Set the seed for generating random numbers in PyTorch (CPU)
+    torch.manual_seed(seed)
+    # If you are using GPUs, set the seed for generating random numbers on all GPUs
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    # Ensure that all operations on GPU are deterministic (if possible)
+    torch.backends.cudnn.deterministic = True
+    # Disable the inbuilt cudnn auto-tuner that finds the best algorithm to use for your hardware
+    torch.backends.cudnn.benchmark = False
+
+
+seed_num = 13
+set_seed(seed_num)
+
 main_loop(time_repr=(["month", "hour", "second"], ["sine", "sine", "sine"], ["cosine", "cosine", "cosine"],
                      [[(12, None, 0), (12, None, 0), (12, None, 0)], [(24, None, 0), (24, None, 0), (24, None, 0)],
                      [(60, None, 0), (60, None, 0), (60, None, 0)]]),
-          seed=13,
-          dirs=["models", "13"])
+          seed=seed_num,
+          dirs=["models", str(seed_num)])

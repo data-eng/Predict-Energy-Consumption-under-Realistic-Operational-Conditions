@@ -28,26 +28,6 @@ class MaskedMSELoss(nn.Module):
         return loss
 
 
-class MaskedMAELoss(nn.Module):
-    """
-    MaskedMAELoss that utilizes masks
-    """
-    def __init__(self):
-        super(MaskedMAELoss, self).__init__()
-
-    def forward(self, pred, true, mask):
-        pred, mask = pred.squeeze(), mask.squeeze()
-        # Compute element-wise squared difference
-        abs_diff = torch.abs(pred - true)
-        # Apply mask to ignore certain elements
-        mask = mask.float()
-        loss = abs_diff * mask
-        # Compute the mean loss only over non-masked elements
-        loss = loss.sum() / (mask.sum() + 1e-8)
-
-        return loss
-
-
 class MaskedLogCosh(nn.Module):
     """
     MaskedMSELoss that utilizes masks
@@ -58,10 +38,7 @@ class MaskedLogCosh(nn.Module):
     def forward(self, pred, true, mask):
         pred, mask = pred.squeeze(), mask.squeeze()
         # Compute element-wise squared difference
-        log_cosh = torch.mean(torch.log(torch.cosh(pred - true) * 10))
-        # Apply mask to ignore certain elements
-        mask = mask.float()
-        loss = log_cosh * mask
+        loss = torch.log(torch.cosh(pred - true)) * mask
         # Compute the mean loss only over non-masked elements
         loss = loss.sum() / (mask.sum() + 1e-8)
 
@@ -134,17 +111,13 @@ def visualize(vizualization, *args):
 
     elif vizualization == 'training_predictions' or vizualization == 'testing_predictions':
         y_true, y_pred = args
-        idx = [i + 1 for i in range(len(y_true))]
-        # Plot the losses
-        plt.plot(idx, y_true, 'o', label='True value')
-        plt.plot(idx, y_pred, 'x', label='Predicted value')
-        # Add titles and labels
-        plt.title('True vs Predicted Value')
-        plt.xlabel('idx')
-        plt.ylabel('Predicted value')
-        # Add a legend
-        plt.legend()
-        # Show the plot
+        plt.figure(figsize=(8, 6))
+        plt.scatter(y_true, y_pred, color='blue', edgecolor='k', alpha=0.7)
+        plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], color='red', lw=2)
+        plt.title('Predicted vs Actual')
+        plt.xlabel('Actual Values')
+        plt.ylabel('Predicted Values')
+        plt.grid(True)
         plt.show()
     else:
         print('Unknown vizualization.')
