@@ -11,6 +11,8 @@ matplotlib = "^3.9.1"
 pandas = "^2.2.2"
 torch = "^2.4.1"
 torchvision = "^0.19.1"
+seaborn = "^0.13.2"
+scikit-learn = "^1.5.2"
 
 
 [build-system]
