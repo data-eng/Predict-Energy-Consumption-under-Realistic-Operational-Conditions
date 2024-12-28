@@ -14,7 +14,7 @@ logger.addHandler(stream_handler)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def evaluate(dirs):
+def evaluate(dirs, stats, y_label):
 
     cfn = utils.get_path(dirs=dirs, name="test_checkpoints.json")
 
@@ -25,7 +25,9 @@ def evaluate(dirs):
 
     nan_indices = [i for i, value in enumerate(y_true) if value == -1]
     y_true = [value for idx, value in enumerate(y_true) if idx not in nan_indices]
+    y_true = utils.unnormalize(y=y_true, stats=stats, column=y_label)
     y_pred = [value for idx, value in enumerate(y_pred) if idx not in nan_indices]
+    y_pred = utils.unnormalize(y=y_pred, stats=stats, column=y_label)
 
     # Convert lists to numpy arrays for convenience
     y_true = np.array(y_true)
@@ -73,4 +75,4 @@ def evaluate(dirs):
     plt.show()
 
 
-evaluate(dirs=["models", "13"])
+evaluate(dirs=["models", "13"], stats=utils.load_json(filename='./stats.json'), y_label='ME_FO_consumption')

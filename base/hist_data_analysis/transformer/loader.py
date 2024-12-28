@@ -176,6 +176,41 @@ def load(path, time_repr, y, normalize=True):
     return df, params
 
 
+def load_bio(df, time_repr, y, normalize=True):
+    """
+    Loads and preprocesses raw_data from a CSV file.
+
+    :param df: pandas DataFrame
+    :param normalize: normalization flag
+    :param time_repr: tuple
+    :return: dataframe
+    """
+
+    df.sort_values(by='datetime', inplace=True)
+
+    params = {"X": [x for x in df.columns if x != 'datetime' and x != y],
+              "t": []}
+
+    # Include time representations of the timeseries
+    df, params = include_time_repr(df, params, *time_repr)
+
+    if os.path.exists('./stats.json'):
+        stats = utils.load_json(filename='./stats.json')
+    else:
+        stats = utils.get_stats(df, path='./')
+
+    if normalize:
+        '''df = utils.normalize(df, stats, exclude=['datetime', 'COR_MONTH', 'COR_DAY', 'COR_HOUR', 'COR_DATE',
+                                                 'UNIQ_MONTH', 'UNIQ_DAY', 'UNIQ_HOUR', 'UNIQ_DATE', 'COR_SECOND',
+                                                 'UNIQ_SECOND', y])'''
+
+        df = utils.normalize(df, stats, exclude=['datetime', 'COR_MONTH', 'COR_DAY', 'COR_HOUR', 'COR_DATE',
+                                                 'UNIQ_MONTH', 'UNIQ_DAY', 'UNIQ_HOUR', 'UNIQ_DATE', 'COR_SECOND',
+                                                 'UNIQ_SECOND'])
+
+    return df, params, stats
+
+
 class TSDataset(Dataset):
     def __init__(self, df, seq_len, X, t, y):
         """
@@ -239,6 +274,88 @@ class TSDataset(Dataset):
 
         if has_positive:
             print(f'Positive value: {y}')'''
+
+        return X, y, mask_X_1d, mask_y_1d
+
+
+class TSDatasetBio(Dataset):
+    def __init__(self, df1, df2, df3, seq_len, X, t, y):
+        """
+        Initializes a time series dataset.
+
+        :param df1: dataframe from ship 1
+        :param df2: dataframe from ship 2
+        :param df3: dataframe from ship 3
+        :param seq_len: length of the input sequence
+        :param X: input features names
+        :param t: time-related features names
+        :param y: target variables names
+        """
+        self.seq_len = seq_len
+        self.data = []
+        self.target_column = y
+        self.Xs = X+t
+
+        y_nan = df1[[y]].isna().any(axis=1)
+        df1.loc[y_nan, :] = float('nan')
+
+        y_nan = df2[[y]].isna().any(axis=1)
+        df2.loc[y_nan, :] = float('nan')
+
+        y_nan = df3[[y]].isna().any(axis=1)
+        df3.loc[y_nan, :] = float('nan')
+
+        self.dataframes = [df1, df2, df3]
+
+        for df in self.dataframes:
+            self._prepare_data(df)
+
+    def _prepare_data(self, df):
+        """
+        Prepares sequences and targets from a single DataFrame.
+        """
+        for i in range(len(df) - self.seq_len):
+            sequence = df.iloc[i:i + self.seq_len].drop(columns=[c for c in df.columns if c not in self.Xs]).values
+            target = df.iloc[i + self.seq_len][self.target_column]
+            self.data.append((sequence, target))
+
+    def __len__(self):
+        """
+        :return: number of sequences that can be created from dataset X
+        """
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        """
+        Retrieves a sample from the dataset at the specified index.
+        Handles NaN values accordingly.
+
+        :param idx: index of the sample
+        :return: tuple containing input features sequence, target variables sequence and their respective masks
+        """
+
+        X, y = self.data[idx]
+
+        mask_X, mask_y = pd.isnull(X).astype(int), int(pd.isnull(y))
+
+        X, y = torch.FloatTensor(X), torch.FloatTensor([y])
+        mask_X, mask_y = torch.FloatTensor(mask_X), torch.FloatTensor([mask_y])
+
+        if mask_y == 1:
+            y = torch.tensor([-1])
+            X = X.fill_(-2)
+
+            mask_y_1d = torch.zeros(1)
+            mask_X_1d = torch.zeros(self.seq_len)
+        else:
+
+            X = X.masked_fill(mask_X == 1, -2)
+
+            mask_X_1d = torch.ones(self.seq_len)
+            mask_y_1d = torch.ones(1)
+            for i in range(self.seq_len):
+                if torch.any(mask_X[i] == 1):
+                    mask_X_1d[i] = 0
 
         return X, y, mask_X_1d, mask_y_1d
 

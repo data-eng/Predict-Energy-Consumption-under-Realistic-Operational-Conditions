@@ -144,6 +144,20 @@ def normalize(df, stats, exclude=None):
     return newdf
 
 
+def unnormalize(y, stats, column):
+    """
+    Normalize raw_data.
+
+    :param y: target column
+    :param stats: tuple of mean and std
+    :param column: target column name
+    :return: processed dataframe
+    """
+
+    mean, std = stats[column]
+    return [yi * std + mean for yi in y]
+
+
 def get_stats(df, path='./'):
     """
     Compute mean and standard deviation for each column in the dataframe.
