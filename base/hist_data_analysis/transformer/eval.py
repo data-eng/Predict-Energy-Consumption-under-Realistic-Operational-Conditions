@@ -14,20 +14,14 @@ logger.addHandler(stream_handler)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def evaluate(dirs, stats, y_label):
+def evaluate(dirs):
 
     cfn = utils.get_path(dirs=dirs, name="test_checkpoints.json")
 
     test_preds = utils.load_json(filename=cfn)
 
-    y_true = test_preds['true_values']
-    y_pred = test_preds['pred_values']
-
-    nan_indices = [i for i, value in enumerate(y_true) if value == -1]
-    y_true = [value for idx, value in enumerate(y_true) if idx not in nan_indices]
-    y_true = utils.unnormalize(y=y_true, stats=stats, column=y_label)
-    y_pred = [value for idx, value in enumerate(y_pred) if idx not in nan_indices]
-    y_pred = utils.unnormalize(y=y_pred, stats=stats, column=y_label)
+    y_true = test_preds['true_values_unnormalized']
+    y_pred = test_preds['pred_values_unnormalized']
 
     # Convert lists to numpy arrays for convenience
     y_true = np.array(y_true)
@@ -43,6 +37,13 @@ def evaluate(dirs, stats, y_label):
     print(f"Mean Squared Error (MSE)       : {mse:.5f}")
     print(f"Root Mean Squared Error (RMSE) : {rmse:.5f}")
     print(f"R-squared (R²)                 : {r2:.5f}")
+
+    test_preds['mae'] = mae
+    test_preds['mse'] = mae
+    test_preds['rmse'] = mae
+    test_preds['r2'] = mae
+
+    utils.save_json(data=test_preds, filename=cfn)
 
     # 2. Predicted vs Actual Plot
     plt.figure(figsize=(8, 6))
@@ -75,4 +76,4 @@ def evaluate(dirs, stats, y_label):
     plt.show()
 
 
-evaluate(dirs=["models", "13"], stats=utils.load_json(filename='./stats.json'), y_label='ME_FO_consumption')
+evaluate(dirs=["models", "13"])

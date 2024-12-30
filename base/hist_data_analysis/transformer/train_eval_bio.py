@@ -26,7 +26,7 @@ def test(test_data, criterion, model, seed, dirs, y_label, stats, visualize=Fals
 
     results = {'seed': seed}
 
-    logger.info(f"\nTraining with seed {seed} just started...")
+    logger.info(f"\nTesting with seed {seed} just started...")
 
     model.eval()
     total_test_loss = 0.0
@@ -59,10 +59,6 @@ def test(test_data, criterion, model, seed, dirs, y_label, stats, visualize=Fals
     results['true_values'] = true_values_list
     results['pred_values'] = pred_values_list
 
-    cfn = utils.get_path(dirs=dirs, name="test_checkpoints.json")
-
-    utils.save_json(data=results, filename=cfn)
-
     # Get the indices where values are NaN
     # print(len(true_values_list))
     nan_indices = [i for i, value in enumerate(true_values_list) if value == -1]
@@ -71,6 +67,12 @@ def test(test_data, criterion, model, seed, dirs, y_label, stats, visualize=Fals
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
     pred_values_list = utils.unnormalize(y=pred_values_list, stats=stats, column=y_label)
     # print(len(true_values_list))
+
+    results['true_values_unnormalized'] = true_values_list
+    results['pred_values_unnormalized'] = pred_values_list
+
+    cfn = utils.get_path(dirs=dirs, name="test_checkpoints.json")
+    utils.save_json(data=results, filename=cfn)
 
     if visualize:
         utils.visualize('testing_predictions', true_values_list, pred_values_list)
@@ -186,6 +188,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
     true_values_list = [value for idx, value in enumerate(true_values_list) if idx not in nan_indices]
     true_values_list = utils.unnormalize(y=true_values_list, stats=stats, column=y_label)
     pred_values_list = [value for idx, value in enumerate(pred_values_list) if idx not in nan_indices]
+    pred_values_list = [item for sublist in pred_values_list for item in sublist]
     pred_values_list = utils.unnormalize(y=pred_values_list, stats=stats, column=y_label)
     # print(len(true_values_list))
 
@@ -207,7 +210,7 @@ def train(data, epochs, patience, lr, criterion, model, optimizer, scheduler, se
 
 def main_loop(time_repr, seed, dirs):
     seq_len = 10
-    batch_size = 8
+    batch_size = 32
 
     data_dir = "../../../data_creation/bio_data"
     ship_1_train = pd.read_csv(f'{data_dir}/ship_1_train.csv')
@@ -240,19 +243,19 @@ def main_loop(time_repr, seed, dirs):
     model = Transformer(in_size=len(params["X"]) + len(params["t"]),
                         sequence_len=seq_len,
                         out_size=1,
-                        nhead=2,
-                        num_layers=2,
+                        nhead=4,
+                        num_layers=4,
                         dim_feedforward=1024,
                         dropout=0)
 
     # Train model
     _, _ = train(data=(dl_train, dl_val),
-                 epochs=3 , #500,
-                 patience=10,
+                 epochs=500,
+                 patience=20,
                  lr=5e-4,
-                 # lr=5e-3,
-                 # criterion=utils.MaskedLogCosh(),
-                 criterion=utils.MaskedMSELoss(),
+                 # lr=1e-4,
+                 criterion=utils.MaskedLogCosh(),
+                 # criterion=utils.MaskedMSELoss(),
                  model=model,
                  optimizer="AdamW",
                  scheduler=("StepLR", 1.0, 0.98),
