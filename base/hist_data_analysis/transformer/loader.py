@@ -212,7 +212,7 @@ class TSDataset(Dataset):
         start_idx = idx * self.seq_len
         end_idx = start_idx + self.seq_len
     
-        X, y = self.X.iloc[start_idx:end_idx].values, self.y.iloc[end_idx+1]
+        X, y = self.X.iloc[start_idx:end_idx].values, self.y.iloc[end_idx]
 
         mask_X, mask_y = pd.isnull(X).astype(int), int(pd.isnull(y))
 

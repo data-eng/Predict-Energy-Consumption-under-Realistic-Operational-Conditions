@@ -40,7 +40,11 @@ def evaluate(dirs):
     print(f"Mean Absolute Error (MAE)      : {mae:.5f}")
     print(f"Mean Squared Error (MSE)       : {mse:.5f}")
     print(f"Root Mean Squared Error (RMSE) : {rmse:.5f}")
-    print(f"R-squared (R²)                 : {r2:.5f}")
+    print(f"R-squared (R²)                 : {r2:.5f}\n")
+
+    test_vals = {'mae': mae, 'mse': mse, 'rmse': rmse, 'r2': r2}
+    vals_pth = utils.get_path(dirs, 'test_vals.json')
+    utils.save_json(filename=vals_pth, data=test_vals)
 
     # 2. Predicted vs Actual Plot
     plt.figure(figsize=(8, 6))
@@ -50,7 +54,9 @@ def evaluate(dirs):
     plt.xlabel('Actual Values')
     plt.ylabel('Predicted Values')
     plt.grid(True)
-    plt.show()
+    plot_pth = utils.get_path(dirs, 'predicted_vs_actual.png')
+    plt.savefig(plot_pth, dpi=600, bbox_inches='tight')
+    plt.close()
 
     # 3. Residuals Plot
     residuals = y_true - y_pred
@@ -61,7 +67,9 @@ def evaluate(dirs):
     plt.xlabel('Predicted Values')
     plt.ylabel('Residuals')
     plt.grid(True)
-    plt.show()
+    plot_pth = utils.get_path(dirs, 'residuals.png')
+    plt.savefig(plot_pth, dpi=600, bbox_inches='tight')
+    plt.close()
 
     # 4. Distribution of Residuals
     plt.figure(figsize=(8, 6))
@@ -70,7 +78,34 @@ def evaluate(dirs):
     plt.xlabel('Residuals')
     plt.ylabel('Frequency')
     plt.grid(True)
-    plt.show()
+    plot_pth = utils.get_path(dirs, 'residuals_dist.png')
+    plt.savefig(plot_pth, dpi=600, bbox_inches='tight')
+    plt.close()
 
 
-evaluate(dirs=["models", "13"])
+seeds = [1, 13, 29, 289, 1045]
+
+for seed_num in seeds:
+    evaluate(dirs=["models", str(seed_num)])
+
+metrics_dict = {'mae': [], 'mse': [], 'rmse': [], 'r2': []}
+
+for seed_num in seeds:
+    vals_pth = utils.get_path(["models", str(seed_num)], 'test_vals.json')
+    vals_dict = utils.load_json(vals_pth)
+
+    for key, val in vals_dict.items():
+        metrics_dict[key].append(val)
+
+
+agg_test_results = dict()
+
+for key, val in metrics_dict.items():
+    agg_test_results[f'{key}_mean'] = np.mean(val)
+    agg_test_results[f'{key}_std'] = np.std(val)
+
+vals_pth = utils.get_path(["models"], 'agg_test_vals.json')
+utils.save_json(filename=vals_pth, data=agg_test_results)
+
+
+
