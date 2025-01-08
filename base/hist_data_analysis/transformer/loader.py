@@ -76,50 +76,6 @@ class TimeRepr():
         cosine_result += cosine_result.iloc[1]/10
 
         return cosine_result
-    
-    @property
-    def sawtooth(self):
-        """
-        Calculate sawtooth representation of timestamps.
-        :return: pandas series
-        """
-        period, _, shift = self.args
-        self.timestamps = self.timestamps.dt.__getattribute__(self.dtime)
-
-        sawtooth_result = (self.timestamps-shift)/period
-        sawtooth_result += sawtooth_result.iloc[1]/10
-
-        return sawtooth_result
-    
-    @property
-    def cond_sawtooth(self):
-        """
-        Calculate conditional sawtooth representation of timestamps.
-        :return: numpy array
-        """
-        period, total, shift = self.args
-        self.timestamps = self.timestamps.dt.__getattribute__(self.dtime)
-
-        cond_sawtooth_result = np.where(self.timestamps <= period, 
-                                        (self.timestamps-shift)/period,
-                                        (total-self.timestamps-shift)/period)
-        cond_sawtooth_result += cond_sawtooth_result[1]/10
-
-        return cond_sawtooth_result
-
-    @property
-    def linear(self):
-        """
-        Calculate linear representation of timestamps.
-        
-        :return: numpy array
-        """
-        total = (self.timestamps.iloc[-1] - self.timestamps.iloc[0]).total_seconds()
-        line = list(map(lambda t: 1e-9 + (t - self.timestamps.iloc[0]).total_seconds()/total, self.timestamps))
-
-        line = np.array(line) + line[1]/10
-    
-        return line
 
 
 def load(path, time_repr, y, normalize=True):

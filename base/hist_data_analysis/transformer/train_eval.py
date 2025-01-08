@@ -273,8 +273,10 @@ seeds = [1, 13, 29, 289, 1045]
 for seed_num in seeds:
     set_seed(seed_num)
 
-    main_loop(time_repr=(["month", "hour", "second"], ["sine", "sine", "sine"], ["cosine", "cosine", "cosine"],
-                         [[(12, None, 0), (12, None, 0), (12, None, 0)], [(24, None, 0), (24, None, 0), (24, None, 0)],
+    main_loop(time_repr=(["month", "day", "hour", "minute"], ["sine", "sine", "sine", "sine"], ["cosine", "cosine", "cosine", "cosine"],
+                         [[(12, None, 0), (12, None, 0), (12, None, 0)],
+                          [(24, None, 0), (24, None, 0), (24, None, 0)],
+                         [(60, None, 0), (60, None, 0), (60, None, 0)],
                          [(60, None, 0), (60, None, 0), (60, None, 0)]]),
               seed=seed_num,
               dirs=["models", str(seed_num)])
