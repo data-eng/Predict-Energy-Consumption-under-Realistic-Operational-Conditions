@@ -231,7 +231,7 @@ def main_loop(time_repr, seed, dirs):
     # Train model
     _, _ = train(data=(dl_train, dl_val),
                  epochs=100,
-                 patience=10,
+                 patience=15,
                  lr=5e-4,
                  # criterion=utils.MaskedLogCosh(),
                  criterion=utils.MaskedMSELoss(),
@@ -268,7 +268,7 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-seeds = [1, 13, 29, 289, 1045]
+seeds = [20, 66, 289, 400, 1045]
 
 for seed_num in seeds:
     set_seed(seed_num)

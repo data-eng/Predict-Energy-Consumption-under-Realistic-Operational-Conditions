@@ -83,7 +83,7 @@ def evaluate(dirs):
     plt.close()
 
 
-seeds = [1, 13, 29, 289, 1045]
+seeds = [20, 66, 289, 400, 1045]
 
 for seed_num in seeds:
     evaluate(dirs=["models", str(seed_num)])
